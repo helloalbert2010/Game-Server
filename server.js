@@ -246,22 +246,24 @@ app.get('/api/list-tables', async (req, res) => {
 app.get('/api/check-status', async (req, res) => {
   try {
     const { pool } = require('./database');
-    const client = await pool.connect();
+    console.log('[STATUS] 开始检查数据库状态...');
 
     // 检查 admin 用户
-    const userResult = await client.query('SELECT id, username, isAdmin FROM users WHERE username = $1', ['admin']);
+    const userResult = await pool.query('SELECT id, username, isAdmin FROM users WHERE username = $1', ['admin']);
+    console.log('[STATUS] Admin 用户查询结果:', userResult.rows);
     const adminExists = userResult.rows.length > 0;
 
     // 检查今日任务
-    const taskResult = await client.query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = CURRENT_DATE');
+    const taskResult = await pool.query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = CURRENT_DATE');
+    console.log('[STATUS] 今日任务查询结果:', taskResult.rows);
     const todayTaskCount = parseInt(taskResult.rows[0].count);
 
     // 检查用户总数
-    const userCountResult = await client.query('SELECT COUNT(*) as count FROM users');
+    const userCountResult = await pool.query('SELECT COUNT(*) as count FROM users');
+    console.log('[STATUS] 用户总数查询结果:', userCountResult.rows);
     const totalUsers = parseInt(userCountResult.rows[0].count);
 
-    client.release();
-
+    console.log('[STATUS] 检查完成');
     res.json({
       message: 'Database status checked',
       status: {
