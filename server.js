@@ -159,6 +159,37 @@ app.get('/api/init-check', async (req, res) => {
   }
 });
 
+// 重置数据库（删除所有表并重新创建）
+app.get('/api/reset-database', async (req, res) => {
+  try {
+    const { pool } = require('./database');
+    console.log('[RESET] 开始重置数据库...');
+
+    // 删除所有表（按依赖关系逆序）
+    const tables = ['user_tasks', 'game_scores', 'daily_tasks', 'seasons', 'users'];
+    for (const table of tables) {
+      try {
+        await pool.query(`DROP TABLE IF EXISTS ${table} CASCADE`);
+        console.log(`[RESET] 删除表: ${table}`);
+      } catch (err) {
+        console.log(`[RESET] 删除表 ${table} 失败:`, err.message);
+      }
+    }
+
+    // 重新初始化
+    await initializeDatabase();
+
+    console.log('[RESET] 数据库重置完成');
+    res.json({
+      message: 'Database reset completed',
+      tablesRecreated: true
+    });
+  } catch (err) {
+    console.error('[RESET] 数据库重置失败:', err);
+    res.status(500).json({ error: 'Failed to reset database', details: err.message });
+  }
+});
+
 // 清理错误的任务数据
 app.get('/api/cleanup-tasks', async (req, res) => {
   try {
