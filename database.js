@@ -35,7 +35,7 @@ async function initializeDatabase() {
   console.log('正在初始化 PostgreSQL 数据库...');
 
   try {
-    // 创建用户表
+    // 1. 创建用户表
     await rawQuery(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -48,20 +48,7 @@ async function initializeDatabase() {
       )
     `);
 
-    // 创建游戏成绩表
-    await rawQuery(`
-      CREATE TABLE IF NOT EXISTS game_scores (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id),
-        game_type TEXT NOT NULL,
-        score REAL NOT NULL,
-        points_earned INTEGER DEFAULT 0,
-        played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        season_id INTEGER REFERENCES seasons(id)
-      )
-    `);
-
-    // 创建赛季表
+    // 2. 创建赛季表（在 game_scores 之前创建）
     await rawQuery(`
       CREATE TABLE IF NOT EXISTS seasons (
         id SERIAL PRIMARY KEY,
@@ -74,7 +61,20 @@ async function initializeDatabase() {
       )
     `);
 
-    // 创建每日任务表
+    // 3. 创建游戏成绩表（引用 users 和 seasons）
+    await rawQuery(`
+      CREATE TABLE IF NOT EXISTS game_scores (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        game_type TEXT NOT NULL,
+        score REAL NOT NULL,
+        points_earned INTEGER DEFAULT 0,
+        played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        season_id INTEGER REFERENCES seasons(id)
+      )
+    `);
+
+    // 4. 创建每日任务表
     await rawQuery(`
       CREATE TABLE IF NOT EXISTS daily_tasks (
         id SERIAL PRIMARY KEY,
@@ -87,7 +87,7 @@ async function initializeDatabase() {
       )
     `);
 
-    // 创建用户任务关系表
+    // 5. 创建用户任务关系表（引用 users 和 daily_tasks）
     await rawQuery(`
       CREATE TABLE IF NOT EXISTS user_tasks (
         id SERIAL PRIMARY KEY,
