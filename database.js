@@ -647,7 +647,38 @@ module.exports = {
   taskOperations,
   statsOperations,
   seasonOperations,
-  ensureAdminUser
+  ensureAdminUser,
+  initializeDatabase
+};
+
+// 数据库初始化状态
+let dbInitialized = false;
+let initPromise = null;
+
+// 确保数据库已初始化
+async function ensureInitialized() {
+  if (dbInitialized) {
+    return;
+  }
+  if (initPromise) {
+    return initPromise;
+  }
+  initPromise = initializeDatabase()
+    .then(() => {
+      dbInitialized = true;
+    })
+    .catch(err => {
+      console.error('数据库初始化失败:', err);
+      throw err;
+    });
+  return initPromise;
+}
+
+// 包装 query 函数，自动初始化数据库
+const originalQuery = query;
+query = async function(text, params) {
+  await ensureInitialized();
+  return originalQuery(text, params);
 };
 
 // 初始化数据库（仅在非 Vercel 环境或首次连接时）
@@ -657,15 +688,6 @@ if (!isVercel) {
     console.error('数据库初始化失败:', err);
     process.exit(1);
   });
-} else {
-  // Vercel 环境：延迟初始化，确保已连接数据库
-  pool.connect()
-    .then(client => {
-      console.log('已连接到 PostgreSQL 数据库 (Vercel/Production)');
-      client.release();
-      return initializeDatabase();
-    })
-    .catch(err => {
-      console.error('数据库连接或初始化失败:', err);
-    });
 }
+// Vercel 环境使用懒加载，不在这里初始化
+

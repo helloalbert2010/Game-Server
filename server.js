@@ -8,7 +8,8 @@ const {
   taskOperations,
   statsOperations,
   seasonOperations,
-  ensureAdminUser
+  ensureAdminUser,
+  initializeDatabase
 } = require('./database');
 const {
   verifyPassword,
@@ -141,16 +142,20 @@ app.post('/api/logout', (req, res) => {
   res.json({ message: '登出成功' });
 });
 
-// 初始化检查（确保 admin 用户存在）
+// 初始化检查（确保数据库已初始化）
 app.get('/api/init-check', async (req, res) => {
   try {
-    console.log('[INIT] 开始检查 admin 用户...');
-    await ensureAdminUser();
-    console.log('[INIT] Admin 用户检查完成');
-    res.json({ message: 'Admin user check completed', adminExists: true });
+    console.log('[INIT] 开始初始化数据库...');
+    await initializeDatabase();
+    console.log('[INIT] 数据库初始化完成');
+    res.json({
+      message: 'Database initialization completed',
+      tablesCreated: true,
+      adminCreated: true
+    });
   } catch (err) {
-    console.error('[INIT] Admin 用户创建失败:', err);
-    res.status(500).json({ error: 'Failed to ensure admin user', details: err.message });
+    console.error('[INIT] 数据库初始化失败:', err);
+    res.status(500).json({ error: 'Failed to initialize database', details: err.message });
   }
 });
 
