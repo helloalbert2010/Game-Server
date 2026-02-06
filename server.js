@@ -242,6 +242,41 @@ app.get('/api/list-tables', async (req, res) => {
   }
 });
 
+// 检查数据库状态
+app.get('/api/check-status', async (req, res) => {
+  try {
+    const { pool } = require('./database');
+    const client = await pool.connect();
+
+    // 检查 admin 用户
+    const userResult = await client.query('SELECT id, username, isAdmin FROM users WHERE username = $1', ['admin']);
+    const adminExists = userResult.rows.length > 0;
+
+    // 检查今日任务
+    const taskResult = await client.query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = CURRENT_DATE');
+    const todayTaskCount = parseInt(taskResult.rows[0].count);
+
+    // 检查用户总数
+    const userCountResult = await client.query('SELECT COUNT(*) as count FROM users');
+    const totalUsers = parseInt(userCountResult.rows[0].count);
+
+    client.release();
+
+    res.json({
+      message: 'Database status checked',
+      status: {
+        adminUserExists: adminExists,
+        adminUserInfo: adminExists ? userResult.rows[0] : null,
+        todayTaskCount: todayTaskCount,
+        totalUsers: totalUsers
+      }
+    });
+  } catch (err) {
+    console.error('[STATUS] 检查失败:', err);
+    res.status(500).json({ error: 'Failed to check status', details: err.message });
+  }
+});
+
 // 清理错误的任务数据
 app.get('/api/cleanup-tasks', async (req, res) => {
   try {
