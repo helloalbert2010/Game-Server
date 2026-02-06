@@ -616,8 +616,8 @@ async function ensureAdminUser() {
   try {
     const result = await userOperations.findByUsername('admin');
     if (!result) {
-      await userOperations.create('admin', 'admin123', 1);
-      console.log('默认管理员账户已创建: admin/admin123');
+      await userOperations.create('admin', 'admin1234', 1);
+      console.log('默认管理员账户已创建: admin/admin1234');
     }
   } catch (err) {
     console.error('创建管理员账户失败:', err);
