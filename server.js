@@ -154,6 +154,23 @@ app.get('/api/init-check', async (req, res) => {
   }
 });
 
+// 清理错误的任务数据
+app.get('/api/cleanup-tasks', async (req, res) => {
+  try {
+    const { query } = require('./database');
+    console.log('[CLEANUP] 清理错误的任务数据...');
+
+    // 删除 task_date 为字符串 'CURRENT_DATE' 的错误数据
+    const result = await query("DELETE FROM daily_tasks WHERE task_date = 'CURRENT_DATE'");
+
+    console.log(`[CLEANUP] 删除了 ${result.rowCount} 条错误任务记录`);
+    res.json({ message: 'Cleanup completed', deletedCount: result.rowCount });
+  } catch (err) {
+    console.error('[CLEANUP] 清理失败:', err);
+    res.status(500).json({ error: 'Cleanup failed', details: err.message });
+  }
+});
+
 // 获取当前用户信息
 app.get('/api/me', authenticate, async (req, res) => {
   const user = await userOperations.findById(req.userId);
