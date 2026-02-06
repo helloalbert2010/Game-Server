@@ -190,6 +190,30 @@ app.get('/api/reset-database', async (req, res) => {
   }
 });
 
+// 测试数据库连接
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const { pool } = require('./database');
+    console.log('[TEST] 测试数据库连接...');
+
+    const client = await pool.connect();
+    console.log('[TEST] 数据库连接成功');
+
+    const result = await client.query('SELECT NOW()');
+    console.log('[TEST] 查询成功:', result.rows[0]);
+
+    client.release();
+
+    res.json({
+      message: 'Database connection successful',
+      timestamp: result.rows[0].now
+    });
+  } catch (err) {
+    console.error('[TEST] 数据库测试失败:', err);
+    res.status(500).json({ error: 'Database test failed', details: err.message });
+  }
+});
+
 // 清理错误的任务数据
 app.get('/api/cleanup-tasks', async (req, res) => {
   try {
