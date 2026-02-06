@@ -1,6 +1,6 @@
 const express = require('express');
-const session = require('express-session');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const {
   userOperations,
@@ -13,7 +13,8 @@ const {
   verifyPassword,
   authenticate,
   requireAdmin,
-  optionalAuth
+  optionalAuth,
+  generateToken
 } = require('./auth');
 const {
   errorHandler,
@@ -26,22 +27,15 @@ const app = express();
 const PORT = 3005;
 
 // 中间件配置
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(requestLogger);
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Session配置
-app.use(session({
-  secret: 'focus-training-platform-secret-key-2024',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000, // 24小时
-    httpOnly: true
-  }
-}));
 
 // ==================== 认证相关路由 ====================
 
@@ -62,6 +56,18 @@ app.post('/api/register', validateBody(['username', 'password']), async (req, re
   try {
     const result = await userOperations.create(username, password);
     const user = await userOperations.findById(result.lastID);
+
+    // 生成 JWT token
+    const token = generateToken(user);
+
+    // 设置 cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24小时
+    });
+
     res.json({
       message: '注册成功',
       user: {
@@ -92,9 +98,16 @@ app.post('/api/login', validateBody(['username', 'password']), async (req, res) 
     return res.status(401).json({ error: '用户名或密码错误' });
   }
 
-  // 创建session
-  req.session.userId = user.id;
-  req.session.isAdmin = user.isAdmin === 1;
+  // 生成 JWT token
+  const token = generateToken(user);
+
+  // 设置 cookie
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000 // 24小时
+  });
 
   // 更新最后登录时间
   await userOperations.updateLastLogin(user.id);
@@ -112,17 +125,13 @@ app.post('/api/login', validateBody(['username', 'password']), async (req, res) 
 
 // 用户登出
 app.post('/api/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: '登出失败' });
-    }
-    res.json({ message: '登出成功' });
-  });
+  res.clearCookie('token');
+  res.json({ message: '登出成功' });
 });
 
 // 获取当前用户信息
 app.get('/api/me', authenticate, async (req, res) => {
-  const user = await userOperations.findById(req.session.userId);
+  const user = await userOperations.findById(req.userId);
   if (!user) {
     return res.status(404).json({ error: '用户不存在' });
   }
@@ -142,7 +151,7 @@ app.get('/api/me', authenticate, async (req, res) => {
 // 提交游戏成绩
 app.post('/api/games/score', authenticate, validateBody(['gameType', 'score']), async (req, res) => {
   const { gameType, score } = req.body;
-  const userId = req.session.userId;
+  const userId = req.userId;
 
   // 计算积分
   const pointsEarned = calculateGamePoints(gameType, score);
@@ -175,7 +184,7 @@ app.post('/api/games/score', authenticate, validateBody(['gameType', 'score']), 
 // 获取游戏历史
 app.get('/api/games/scores/:gameType', authenticate, async (req, res) => {
   const { gameType } = req.params;
-  const userId = req.session.userId;
+  const userId = req.userId;
 
   const history = await scoreOperations.getUserHistory(userId, gameType);
   res.json({ history });
@@ -219,7 +228,7 @@ app.get('/api/tasks/today', authenticate, async (req, res) => {
   const tasks = await taskOperations.getTodayTasks();
 
   // 检查用户完成任务情况
-  const userId = req.session.userId;
+  const userId = req.userId;
   const { db } = require('./database');
 
   const tasksWithStatus = await Promise.all(tasks.map(async (task) => {
@@ -244,7 +253,7 @@ app.get('/api/tasks/today', authenticate, async (req, res) => {
 
 // 获取任务历史
 app.get('/api/tasks/history', authenticate, async (req, res) => {
-  const userId = req.session.userId;
+  const userId = req.userId;
   const history = await taskOperations.getHistory(userId);
   res.json({ history });
 });
@@ -252,7 +261,7 @@ app.get('/api/tasks/history', authenticate, async (req, res) => {
 // 完成任务（手动触发）
 app.post('/api/tasks/:id/complete', authenticate, async (req, res) => {
   const taskId = parseInt(req.params.id);
-  const userId = req.session.userId;
+  const userId = req.userId;
 
   const result = await taskOperations.complete(userId, taskId);
 
@@ -275,7 +284,7 @@ app.post('/api/tasks/:id/complete', authenticate, async (req, res) => {
 
 // 获取用户统计信息
 app.get('/api/stats/user', authenticate, async (req, res) => {
-  const userId = req.session.userId;
+  const userId = req.userId;
   const stats = await statsOperations.getUserStats(userId);
   res.json({ stats });
 });
@@ -327,7 +336,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   const userId = parseInt(req.params.id);
 
   // 不允许删除管理员自己
-  if (userId === req.session.userId) {
+  if (userId === req.userId) {
     return res.status(400).json({ error: '不能删除自己的账户' });
   }
 
