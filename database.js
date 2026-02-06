@@ -611,16 +611,29 @@ const seasonOperations = {
   }
 };
 
-// 检查并创建管理员账户
+// 检查并创建/更新管理员账户
 async function ensureAdminUser() {
   try {
     const result = await userOperations.findByUsername('admin');
+    const correctPasswordHash = require('bcrypt').hashSync('admin1234', 10);
+
     if (!result) {
+      // 不存在则创建
       await userOperations.create('admin', 'admin1234', 1);
       console.log('默认管理员账户已创建: admin/admin1234');
+    } else {
+      // 存在则检查密码是否正确，不正确则更新
+      const currentPasswordHash = result.password;
+      const passwordMatch = require('bcrypt').compareSync('admin1234', currentPasswordHash);
+      if (!passwordMatch) {
+        await query('UPDATE users SET password = $1 WHERE username = $2', [correctPasswordHash, 'admin']);
+        console.log('管理员密码已重置为: admin/admin1234');
+      } else {
+        console.log('管理员账户已存在且密码正确: admin/admin1234');
+      }
     }
   } catch (err) {
-    console.error('创建管理员账户失败:', err);
+    console.error('管理员账户处理失败:', err);
   }
 }
 
