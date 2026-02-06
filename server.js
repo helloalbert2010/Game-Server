@@ -214,6 +214,34 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+// 列出所有表
+app.get('/api/list-tables', async (req, res) => {
+  try {
+    const { pool } = require('./database');
+    console.log('[TABLES] 查询数据库表...');
+
+    const client = await pool.connect();
+    const result = await client.query(`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public'
+      ORDER BY tablename
+    `);
+    client.release();
+
+    const tables = result.rows.map(row => row.tablename);
+    console.log('[TABLES] 当前表:', tables);
+
+    res.json({
+      message: 'Tables listed',
+      tables: tables,
+      count: tables.length
+    });
+  } catch (err) {
+    console.error('[TABLES] 查询失败:', err);
+    res.status(500).json({ error: 'Failed to list tables', details: err.message });
+  }
+});
+
 // 清理错误的任务数据
 app.get('/api/cleanup-tasks', async (req, res) => {
   try {
