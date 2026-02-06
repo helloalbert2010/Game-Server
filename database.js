@@ -419,9 +419,10 @@ const taskOperations = {
       selectedTasks.push(templates.splice(index, 1)[0]);
     }
 
-    // 插入任务
+    // 插入任务（使用当前日期）
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 格式
     for (const task of selectedTasks) {
-      await taskOperations.create('CURRENT_DATE', task.type, task.target, task.reward, task.desc);
+      await taskOperations.create(today, task.type, task.target, task.reward, task.desc);
     }
 
     return { created: selectedTasks.length };
