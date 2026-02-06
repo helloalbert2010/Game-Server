@@ -634,8 +634,24 @@ module.exports = {
   seasonOperations
 };
 
-// 初始化数据库
-initializeDatabase().catch(err => {
-  console.error('数据库初始化失败:', err);
-  process.exit(1);
-});
+// 初始化数据库（仅在非 Vercel 环境或首次连接时）
+const isVercel = process.env.VERCEL || process.env.NODE_ENV === 'production';
+if (!isVercel) {
+  initializeDatabase().catch(err => {
+    console.error('数据库初始化失败:', err);
+    process.exit(1);
+  });
+} else {
+  // Vercel 环境：延迟初始化，确保已连接数据库
+  pool.connect((err, client, release) => {
+    if (err) {
+      console.error('数据库连接失败:', err);
+      return;
+    }
+    console.log('已连接到 PostgreSQL 数据库 (Vercel)');
+    release();
+    initializeDatabase().catch(err => {
+      console.error('数据库初始化失败:', err);
+    });
+  });
+}

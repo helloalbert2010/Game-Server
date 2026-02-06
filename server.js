@@ -24,7 +24,7 @@ const {
 } = require('./middleware');
 
 const app = express();
-const PORT = 3005;
+const PORT = process.env.PORT || 3005;
 
 // 中间件配置
 app.use(cors({
@@ -515,8 +515,10 @@ app.use(errorHandler);
 
 // ==================== 启动服务器 ====================
 
-app.listen(PORT, () => {
-  console.log(`
+// 仅在非 Vercel 环境下启动服务器
+if (require('fs').existsSync('.vercel') === false && process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║     专注力训练游戏平台服务器已启动                    ║
 ╠═══════════════════════════════════════════════════════╣
@@ -528,4 +530,8 @@ app.listen(PORT, () => {
 ║  密码: admin123                                        ║
 ╚═══════════════════════════════════════════════════════╝
   `);
-});
+  });
+}
+
+// 导出 app 供 Vercel 使用
+module.exports = app;
