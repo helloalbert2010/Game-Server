@@ -10,8 +10,8 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// 辅助函数：执行 SQL 查询
-async function query(text, params) {
+// 原始查询函数（直接使用 pool，不触发初始化）
+async function rawQuery(text, params) {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
@@ -24,13 +24,19 @@ async function query(text, params) {
   }
 }
 
+// 导出的查询函数（带自动初始化）
+async function query(text, params) {
+  await ensureInitialized();
+  return rawQuery(text, params);
+}
+
 // 初始化数据库表
 async function initializeDatabase() {
   console.log('正在初始化 PostgreSQL 数据库...');
 
   try {
     // 创建用户表
-    await query(`
+    await rawQuery(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
@@ -43,7 +49,7 @@ async function initializeDatabase() {
     `);
 
     // 创建游戏成绩表
-    await query(`
+    await rawQuery(`
       CREATE TABLE IF NOT EXISTS game_scores (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
@@ -56,7 +62,7 @@ async function initializeDatabase() {
     `);
 
     // 创建赛季表
-    await query(`
+    await rawQuery(`
       CREATE TABLE IF NOT EXISTS seasons (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -69,7 +75,7 @@ async function initializeDatabase() {
     `);
 
     // 创建每日任务表
-    await query(`
+    await rawQuery(`
       CREATE TABLE IF NOT EXISTS daily_tasks (
         id SERIAL PRIMARY KEY,
         task_date TEXT NOT NULL,
@@ -82,7 +88,7 @@ async function initializeDatabase() {
     `);
 
     // 创建用户任务关系表
-    await query(`
+    await rawQuery(`
       CREATE TABLE IF NOT EXISTS user_tasks (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
@@ -93,12 +99,12 @@ async function initializeDatabase() {
     `);
 
     // 创建索引
-    await query(`CREATE INDEX IF NOT EXISTS idx_game_scores_user ON game_scores(user_id)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_game_scores_type ON game_scores(game_type)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_game_scores_season ON game_scores(season_id)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_seasons_dates ON seasons(start_date, end_date)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_user_tasks_user ON user_tasks(user_id)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(task_date)`);
+    await rawQuery(`CREATE INDEX IF NOT EXISTS idx_game_scores_user ON game_scores(user_id)`);
+    await rawQuery(`CREATE INDEX IF NOT EXISTS idx_game_scores_type ON game_scores(game_type)`);
+    await rawQuery(`CREATE INDEX IF NOT EXISTS idx_game_scores_season ON game_scores(season_id)`);
+    await rawQuery(`CREATE INDEX IF NOT EXISTS idx_seasons_dates ON seasons(start_date, end_date)`);
+    await rawQuery(`CREATE INDEX IF NOT EXISTS idx_user_tasks_user ON user_tasks(user_id)`);
+    await rawQuery(`CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(task_date)`);
 
     console.log('PostgreSQL 数据库表初始化完成');
 
@@ -674,20 +680,11 @@ async function ensureInitialized() {
   return initPromise;
 }
 
-// 包装 query 函数，自动初始化数据库
-const originalQuery = query;
-query = async function(text, params) {
-  await ensureInitialized();
-  return originalQuery(text, params);
-};
-
-// 初始化数据库（仅在非 Vercel 环境或首次连接时）
-const isVercel = process.env.VERCEL || process.env.NODE_ENV === 'production';
-if (!isVercel) {
+// 本地环境在启动时初始化，Vercel 使用懒加载
+if (process.env.NODE_ENV !== 'production') {
   initializeDatabase().catch(err => {
     console.error('数据库初始化失败:', err);
     process.exit(1);
   });
 }
-// Vercel 环境使用懒加载，不在这里初始化
 
