@@ -440,7 +440,6 @@ const taskOperations = {
     }
 
     // 插入任务（使用当前日期）
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 格式
     for (const task of selectedTasks) {
       await taskOperations.create(today, task.type, task.target, task.reward, task.desc);
     }
