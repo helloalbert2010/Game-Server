@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专注力训练平台 - 登录</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-box fade-in">
+      <h1 class="auth-title">🎯 专注力训练平台</h1>
+
+      <!-- 登录表单 -->
+      <div id="login-form">
+        <div id="login-alert"></div>
+
+        <div class="form-group">
+          <label for="login-username">用户名</label>
+          <input
+            type="text"
+            id="login-username"
+            class="form-control"
+            placeholder="请输入用户名"
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">密码</label>
+          <input
+            type="password"
+            id="login-password"
+            class="form-control"
+            placeholder="请输入密码"
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="button" class="btn btn-primary" style="width: 100%" onclick="handleLogin()">
+          登录
+        </button>
+
+        <div class="auth-switch">
+          还没有账户？ <a href="#" onclick="toggleForms()">立即注册</a>
+        </div>
+      </div>
+
+      <!-- 注册表单 -->
+      <div id="register-form" class="hidden">
+        <div id="register-alert"></div>
+
+        <div class="form-group">
+          <label for="register-username">用户名</label>
+          <input
+            type="text"
+            id="register-username"
+            class="form-control"
+            placeholder="请输入用户名（3-20个字符）"
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="register-password">密码</label>
+          <input
+            type="password"
+            id="register-password"
+            class="form-control"
+            placeholder="请输入密码（至少6个字符）"
+            autocomplete="new-password"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="register-confirm">确认密码</label>
+          <input
+            type="password"
+            id="register-confirm"
+            class="form-control"
+            placeholder="请再次输入密码"
+            autocomplete="new-password"
+          >
+        </div>
+
+        <button type="button" class="btn btn-primary" style="width: 100%" onclick="handleRegister()">
+          注册
+        </button>
+
+        <div class="auth-switch">
+          已有账户？ <a href="#" onclick="toggleForms()">立即登录</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // 切换登录/注册表单
+    function toggleForms() {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+
+      if (loginForm.classList.contains('hidden')) {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+      }
+    }
+
+    // 处理登录
+    async function handleLogin() {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const alertDiv = document.getElementById('login-alert');
+
+      // 验证输入
+      if (!username || !password) {
+        showAlert('login-alert', '请填写所有字段', 'error');
+        return;
+      }
+
+      try {
+        await login(username, password);
+        // 登录成功，等待跳转
+        setTimeout(() => {
+          window.location.href = '/lobby';
+        }, 1000);
+      } catch (error) {
+        // 错误已在 login 函数中处理
+      }
+    }
+
+    // 处理注册
+    async function handleRegister() {
+      const username = document.getElementById('register-username').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirm = document.getElementById('register-confirm').value;
+
+      // 验证输入
+      if (!username || !password || !confirm) {
+        showAlert('register-alert', '请填写所有字段', 'error');
+        return;
+      }
+
+      if (username.length < 3 || username.length > 20) {
+        showAlert('register-alert', '用户名长度必须在3-20个字符之间', 'error');
+        return;
+      }
+
+      if (password.length < 6) {
+        showAlert('register-alert', '密码长度必须至少6个字符', 'error');
+        return;
+      }
+
+      if (password !== confirm) {
+        showAlert('register-alert', '两次输入的密码不一致', 'error');
+        return;
+      }
+
+      try {
+        await register(username, password);
+        // 注册成功，等待跳转
+        setTimeout(() => {
+          window.location.href = '/lobby';
+        }, 1000);
+      } catch (error) {
+        // 错误已在 register 函数中处理
+      }
+    }
+
+    // 显示提示信息
+    function showAlert(elementId, message, type) {
+      const alertDiv = document.getElementById(elementId);
+      alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        alertDiv.innerHTML = '';
+      }, 3000);
+    }
+
+    // 回车键提交
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        const loginForm = document.getElementById('login-form');
+        if (!loginForm.classList.contains('hidden')) {
+          handleLogin();
+        } else {
+          handleRegister();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

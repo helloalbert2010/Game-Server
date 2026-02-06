@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>打砖块 - 专注力训练平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .breakout-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .back-button {
+      margin-bottom: 20px;
+    }
+
+    .game-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .game-area {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .game-canvas-wrapper {
+      background: var(--darker-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    #gameCanvas {
+      display: block;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: linear-gradient(to bottom, #1e293b, #0f172a);
+    }
+
+    .game-info-panel {
+      min-width: 220px;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .info-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .info-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .info-value.level {
+      color: var(--warning-color);
+    }
+
+    .info-value.points {
+      color: var(--secondary-color);
+    }
+
+    .game-controls-panel {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .control-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 24px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-start {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-start:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-pause {
+      background: var(--warning-color);
+      color: white;
+    }
+
+    .btn-pause:hover {
+      background: #d97706;
+    }
+
+    .btn-reset {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .btn-reset:hover {
+      background: #dc2626;
+    }
+
+    .instructions {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .instructions h3 {
+      color: var(--primary-color);
+      margin-bottom: 12px;
+    }
+
+    .instructions ul {
+      list-style-position: inside;
+      color: var(--text-secondary);
+    }
+
+    .instructions li {
+      margin: 8px 0;
+    }
+
+    .result-display {
+      text-align: center;
+      padding: 24px;
+      background: var(--darker-bg);
+      border-radius: 12px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .result-display.active {
+      display: block;
+    }
+
+    .result-score {
+      font-size: 48px;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .result-message {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .result-points {
+      font-size: 28px;
+      color: var(--warning-color);
+      font-weight: bold;
+    }
+
+    .lives-display {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .life-icon {
+      font-size: 24px;
+      color: var(--danger-color);
+    }
+
+    .leaderboard-section {
+      margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .game-area {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #gameCanvas {
+        max-width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body data-auth-required="true">
+  <div class="breakout-container">
+    <div class="back-button">
+      <a href="/lobby" class="btn btn-outline">← 返回大厅</a>
+    </div>
+
+    <div class="game-header">
+      <h1>🧱 经典打砖块</h1>
+      <p style="color: var(--text-secondary);">控制挡板反弹球，击碎所有砖块！</p>
+    </div>
+
+    <div class="instructions">
+      <h3>📋 游戏说明</h3>
+      <ul>
+        <li>使用鼠标或左右箭头键控制挡板移动</li>
+        <li>击碎砖块得分，不同颜色砖块分数不同</li>
+        <li>球掉落底部失去一条生命</li>
+        <li>3条生命用完游戏结束</li>
+      </ul>
+    </div>
+
+    <div class="game-area">
+      <div class="game-canvas-wrapper">
+        <canvas id="gameCanvas" width="600" height="500"></canvas>
+      </div>
+
+      <div class="game-info-panel">
+        <div class="info-card">
+          <div class="info-label">当前分数</div>
+          <div class="info-value" id="currentScore">0</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-label">当前关卡</div>
+          <div class="info-value level" id="currentLevel">1</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-label">剩余生命</div>
+          <div class="lives-display" id="livesDisplay">
+            <span class="life-icon">❤️</span>
+            <span class="life-icon">❤️</span>
+            <span class="life-icon">❤️</span>
+          </div>
+        </div>
+
+        <div class="game-controls-panel">
+          <button class="control-btn btn-start" id="startBtn">开始游戏</button>
+          <button class="control-btn btn-pause" id="pauseBtn">暂停</button>
+          <button class="control-btn btn-reset" id="resetBtn">重新开始</button>
+        </div>
+
+        <div class="result-display" id="resultDisplay">
+          <div class="result-score" id="resultScore">0</div>
+          <div class="result-message" id="resultMessage"></div>
+          <div class="result-points" id="resultPoints"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card leaderboard-section">
+      <h2 style="color: var(--secondary-color);">🏆 排行榜</h2>
+      <div id="leaderboard-container">
+        <div class="loading">加载中</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // 游戏配置
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 游戏对象
+    let ball = {};
+    let paddle = {};
+    let bricks = [];
+    let gameLoop = null;
+    let score = 0;
+    let level = 1;
+    let lives = 3;
+    let gameState = 'idle'; // idle, playing, paused, gameOver
+
+    // 砖块配置
+    const brickConfig = {
+      rows: 5,
+      cols: 8,
+      width: 65,
+      height: 20,
+      padding: 8,
+      offsetTop: 40,
+      offsetLeft: 22
+    };
+
+    // 砖块颜色和分数
+    const brickTypes = [
+      { color: '#ef4444', points: 50 },
+      { color: '#f59e0b', points: 40 },
+      { color: '#10b981', points: 30 },
+      { color: '#3b82f6', points: 20 },
+      { color: '#8b5cf6', points: 10 }
+    ];
+
+    // DOM 元素
+    const currentScoreEl = document.getElementById('currentScore');
+    const currentLevelEl = document.getElementById('currentLevel');
+    const livesDisplayEl = document.getElementById('livesDisplay');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultDisplay = document.getElementById('resultDisplay');
+
+    // 初始化游戏
+    function init() {
+      // 初始化球
+      ball = {
+        x: canvas.width / 2,
+        y: canvas.height - 50,
+        dx: 4,
+        dy: -4,
+        radius: 8
+      };
+
+      // 初始化挡板
+      paddle = {
+        width: 100,
+        height: 12,
+        x: (canvas.width - 100) / 2,
+        speed: 8
+      };
+
+      score = 0;
+      level = 1;
+      lives = 3;
+
+      updateUI();
+      initBricks();
+      draw();
+    }
+
+    // 初始化砖块
+    function initBricks() {
+      bricks = [];
+      for (let row = 0; row < brickConfig.rows; row++) {
+        for (let col = 0; col < brickConfig.cols; col++) {
+          bricks.push({
+            x: col * (brickConfig.width + brickConfig.padding) + brickConfig.offsetLeft,
+            y: row * (brickConfig.height + brickConfig.padding) + brickConfig.offsetTop,
+            width: brickConfig.width,
+            height: brickConfig.height,
+            color: brickTypes[row].color,
+            points: brickTypes[row].points,
+            visible: true
+          });
+        }
+      }
+    }
+
+    // 绘制游戏
+    function draw() {
+      // 清空画布
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制球
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.closePath();
+
+      // 绘制挡板
+      ctx.fillStyle = '#6366f1';
+      ctx.fillRect(paddle.x, canvas.height - paddle.height - 10, paddle.width, paddle.height);
+
+      // 绘制砖块
+      bricks.forEach(brick => {
+        if (brick.visible) {
+          ctx.fillStyle = brick.color;
+          ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+        }
+      });
+    }
+
+    // 游戏循环
+    function update() {
+      // 移动球
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // 墙壁碰撞检测
+      if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+        ball.dx = -ball.dx;
+      }
+      if (ball.y - ball.radius < 0) {
+        ball.dy = -ball.dy;
+      }
+
+      // 挡板碰撞检测
+      if (ball.y + ball.radius > canvas.height - paddle.height - 10 &&
+          ball.x > paddle.x &&
+          ball.x < paddle.x + paddle.width) {
+        ball.dy = -Math.abs(ball.dy);
+
+        // 根据击中位置调整角度
+        const hitPos = (ball.x - paddle.x) / paddle.width;
+        ball.dx = (hitPos - 0.5) * 8;
+      }
+
+      // 砖块碰撞检测
+      bricks.forEach(brick => {
+        if (brick.visible &&
+            ball.x > brick.x &&
+            ball.x < brick.x + brick.width &&
+            ball.y > brick.y &&
+            ball.y < brick.y + brick.height) {
+          ball.dy = -ball.dy;
+          brick.visible = false;
+          score += brick.points;
+          updateUI();
+        }
+      });
+
+      // 检查是否完成关卡
+      if (bricks.every(brick => !brick.visible)) {
+        nextLevel();
+        return;
+      }
+
+      // 球掉落底部
+      if (ball.y + ball.radius > canvas.height) {
+        loseLife();
+        return;
+      }
+
+      draw();
+    }
+
+    // 下一关
+    function nextLevel() {
+      level++;
+      ball.dx *= 1.1;
+      ball.dy *= 1.1;
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height - 50;
+      paddle.x = (canvas.width - paddle.width) / 2;
+      initBricks();
+      updateUI();
+    }
+
+    // 失去生命
+    function loseLife() {
+      lives--;
+      updateUI();
+
+      if (lives <= 0) {
+        gameOver();
+      } else {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height - 50;
+        ball.dx = 4 * (1 + (level - 1) * 0.1);
+        ball.dy = -4 * (1 + (level - 1) * 0.1);
+        paddle.x = (canvas.width - paddle.width) / 2;
+      }
+    }
+
+    // 更新UI
+    function updateUI() {
+      currentScoreEl.textContent = score;
+      currentLevelEl.textContent = level;
+
+      // 更新生命显示
+      let livesHTML = '';
+      for (let i = 0; i < lives; i++) {
+        livesHTML += '<span class="life-icon">❤️</span>';
+      }
+      livesDisplayEl.innerHTML = livesHTML;
+    }
+
+    // 开始游戏
+    function startGame() {
+      if (gameState === 'playing') return;
+
+      if (gameState === 'idle' || gameState === 'gameOver') {
+        init();
+      }
+
+      gameState = 'playing';
+      resultDisplay.classList.remove('active');
+      startBtn.textContent = '游戏中...';
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+
+      gameLoop = setInterval(update, 16);
+    }
+
+    // 暂停游戏
+    function pauseGame() {
+      if (gameState !== 'playing') return;
+
+      clearInterval(gameLoop);
+      gameState = 'paused';
+      startBtn.textContent = '继续游戏';
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+    }
+
+    // 游戏结束
+    async function gameOver() {
+      clearInterval(gameLoop);
+      gameState = 'gameOver';
+
+      const points = calculatePoints(score);
+
+      // 显示结果
+      document.getElementById('resultScore').textContent = score + ' 分';
+      document.getElementById('resultMessage').textContent = `通过 ${level} 关`;
+      document.getElementById('resultPoints').textContent = `+${points} 积分`;
+      resultDisplay.classList.add('active');
+
+      startBtn.textContent = '开始游戏';
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+
+      // 上传成绩
+      try {
+        const result = await submitScore('breakout', score);
+        document.getElementById('resultPoints').textContent = `+${result.totalPoints} 积分`;
+        loadLeaderboard();
+      } catch (error) {
+        console.error('提交成绩失败:', error);
+      }
+    }
+
+    // 计算积分
+    function calculatePoints(score) {
+      if (score >= 2000) return 100;
+      if (score >= 1500) return 80;
+      if (score >= 1000) return 60;
+      if (score >= 500) return 40;
+      return 20;
+    }
+
+    // 重置游戏
+    function resetGame() {
+      clearInterval(gameLoop);
+      gameState = 'idle';
+      resultDisplay.classList.remove('active');
+      startBtn.textContent = '开始游戏';
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      init();
+    }
+
+    // 键盘控制
+    document.addEventListener('keydown', (e) => {
+      if (gameState !== 'playing') return;
+
+      if (e.key === 'ArrowLeft') {
+        paddle.x = Math.max(0, paddle.x - paddle.speed * 2);
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        paddle.x = Math.min(canvas.width - paddle.width, paddle.x + paddle.speed * 2);
+        e.preventDefault();
+      }
+    });
+
+    // 鼠标控制
+    canvas.addEventListener('mousemove', (e) => {
+      if (gameState !== 'playing') return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, mouseX - paddle.width / 2));
+    });
+
+    // 按钮事件
+    startBtn.addEventListener('click', startGame);
+    pauseBtn.addEventListener('click', pauseGame);
+    resetBtn.addEventListener('click', resetGame);
+
+    // 加载排行榜
+    async function loadLeaderboard() {
+      const container = document.getElementById('leaderboard-container');
+      try {
+        const leaderboard = await getLeaderboard('breakout');
+
+        if (!leaderboard || leaderboard.length === 0) {
+          container.innerHTML = '<p class="text-center" style="color: var(--text-secondary);">暂无数据</p>';
+          return;
+        }
+
+        const html = `
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>用户</th>
+                <th>分数</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${leaderboard.slice(0, 10).map((item, index) => `
+                <tr>
+                  <td class="rank-${index + 1}">#${index + 1}</td>
+                  <td>${item.username}</td>
+                  <td>${Math.floor(item.score)} 分</td>
+                  <td>${formatDate(item.played_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+        container.innerHTML = html;
+      } catch (error) {
+        container.innerHTML = '<p class="text-center" style="color: var(--danger-color);">加载失败</p>';
+      }
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+      loadLeaderboard();
+    });
+  </script>
+</body>
+</html>

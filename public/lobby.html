@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游戏大厅 - 专注力训练平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-auth-required="true">
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-brand">🎯 专注力训练</div>
+    <div class="navbar-nav">
+      <div class="user-info">
+        <span>欢迎, <span data-username>加载中...</span></span>
+        <div class="points-badge">
+          <span data-points>0</span> 积分
+        </div>
+        <a href="/games/f1-reaction" class="btn btn-primary">开始游戏</a>
+        <a href="/admin" class="btn btn-secondary hidden" data-admin-only>管理面板</a>
+        <button onclick="logout()" class="btn btn-outline">登出</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- 赛季标题块（默认隐藏，有活跃赛季时显示） -->
+    <div class="season-banner hidden" id="season-banner">
+      <div class="season-banner-bg"></div>
+      <div class="season-banner-content">
+        <div class="season-header">
+          <div class="season-icon">🏆</div>
+          <div class="season-info">
+            <div class="season-title" id="season-name">第 1 赛季</div>
+            <div class="season-subtitle" id="season-description">精英挑战赛</div>
+          </div>
+          <div class="season-status-badge">
+            <span class="status-dot"></span>
+            进行中
+          </div>
+        </div>
+        <div class="season-details">
+          <div class="season-detail-item">
+            <div class="detail-icon">⏱️</div>
+            <div class="detail-text">
+              <div class="detail-label">剩余时间</div>
+              <div class="detail-value" id="season-remaining">计算中</div>
+            </div>
+          </div>
+          <div class="season-divider"></div>
+          <div class="season-detail-item">
+            <div class="detail-icon">👥</div>
+            <div class="detail-text">
+              <div class="detail-label">参赛人数</div>
+              <div class="detail-value" id="season-participants">-</div>
+            </div>
+          </div>
+          <div class="season-divider"></div>
+          <div class="season-detail-item">
+            <div class="detail-icon">🎯</div>
+            <div class="detail-text">
+              <div class="detail-label">你的排名</div>
+              <div class="detail-value" id="season-user-rank">-</div>
+            </div>
+          </div>
+          <div class="season-divider"></div>
+          <div class="season-detail-item">
+            <div class="detail-icon">⭐</div>
+            <div class="detail-text">
+              <div class="detail-label">赛季积分</div>
+              <div class="detail-value" id="season-user-points">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="season-banner-shine"></div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" data-stat="totalGames">-</div>
+        <div class="stat-label">游戏次数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" data-stat="totalPointsEarned">-</div>
+        <div class="stat-label">累计积分</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" data-stat="completedTasks">-</div>
+        <div class="stat-label">完成任务</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" data-stat="bestScore">-</div>
+        <div class="stat-label">最佳成绩</div>
+      </div>
+    </div>
+
+    <!-- 游戏区域 -->
+    <div class="card" style="margin-bottom: 30px;">
+      <h2 style="margin-bottom: 20px; color: var(--primary-color);">🎮 选择游戏</h2>
+      <div class="games-grid">
+        <div class="game-card" onclick="window.location.href='/games/f1-reaction'">
+          <div class="game-icon">🏎️</div>
+          <div class="game-title">F1 反应测试</div>
+          <div class="game-description">
+            测试你的反应速度，像 F1 车手一样快！
+            <br><br>
+            <strong>积分规则：</strong>
+            <br>&lt; 0.200s: 100分
+            <br>0.200-0.230s: 80分
+            <br>0.230-0.250s: 60分
+            <br>0.250-0.300s: 40分
+            <br>&gt; 0.300s: 20分
+          </div>
+          <button class="btn btn-primary">开始游戏</button>
+        </div>
+
+        <div class="game-card" onclick="window.location.href='/games/schulte-grid'">
+          <div class="game-icon">🔢</div>
+          <div class="game-title">舒尔特方格</div>
+          <div class="game-description">
+            按顺序点击 1-25 的数字，训练注意力！
+            <br><br>
+            <strong>积分规则：</strong>
+            <br>&lt; 20s: 100分
+            <br>20-30s: 80分
+            <br>30-40s: 60分
+            <br>40-50s: 40分
+            <br>&gt; 50s: 20分
+          </div>
+          <button class="btn btn-primary">开始游戏</button>
+        </div>
+
+        <div class="game-card" onclick="window.location.href='/games/snake'">
+          <div class="game-icon">🐍</div>
+          <div class="game-title">经典贪吃蛇</div>
+          <div class="game-description">
+            控制蛇吃食物，避免撞到墙壁和自己！
+            <br><br>
+            <strong>积分规则：</strong>
+            <br>≥ 500分: 100分
+            <br>≥ 300分: 80分
+            <br>≥ 200分: 60分
+            <br>≥ 100分: 40分
+            <br>&lt; 100分: 20分
+          </div>
+          <button class="btn btn-primary">开始游戏</button>
+        </div>
+
+        <div class="game-card" onclick="window.location.href='/games/breakout'">
+          <div class="game-icon">🧱</div>
+          <div class="game-title">经典打砖块</div>
+          <div class="game-description">
+            控制挡板反弹球，击碎所有砖块！
+            <br><br>
+            <strong>积分规则：</strong>
+            <br>≥ 2000分: 100分
+            <br>≥ 1500分: 80分
+            <br>≥ 1000分: 60分
+            <br>≥ 500分: 40分
+            <br>&lt; 500分: 20分
+          </div>
+          <button class="btn btn-primary">开始游戏</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+      <!-- 今日任务 -->
+      <div class="card">
+        <h2 style="margin-bottom: 20px; color: var(--warning-color);">📋 今日任务</h2>
+        <div id="tasks-container">
+          <div class="loading">加载中</div>
+        </div>
+      </div>
+
+      <!-- 排行榜 -->
+      <div class="card">
+        <h2 style="margin-bottom: 20px; color: var(--secondary-color);">🏆 积分排行榜</h2>
+        <div id="leaderboard-container">
+          <div class="loading">加载中</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let currentUser = null;
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', async function() {
+      currentUser = await initPage();
+      if (currentUser) {
+        await loadSeasonData(); // 加载赛季信息
+        await loadUserData();
+        await loadTasks();
+        await loadLeaderboard();
+      }
+    });
+
+    // 加载赛季数据
+    async function loadSeasonData() {
+      try {
+        const season = await getActiveSeason();
+
+        if (!season) {
+          // 没有活跃赛季，隐藏横幅
+          document.getElementById('season-banner').classList.add('hidden');
+          return;
+        }
+
+        // 显示赛季横幅
+        const banner = document.getElementById('season-banner');
+        banner.classList.remove('hidden');
+
+        // 填充基本信息
+        document.getElementById('season-name').textContent = season.name;
+        document.getElementById('season-description').textContent = season.description || '精彩赛季';
+
+        // 计算并显示剩余时间
+        const remaining = calculateRemainingTime(season.end_date);
+        document.getElementById('season-remaining').textContent = remaining.text;
+
+        // 启动倒计时更新（每分钟更新一次）
+        setInterval(() => {
+          const newRemaining = calculateRemainingTime(season.end_date);
+          document.getElementById('season-remaining').textContent = newRemaining.text;
+        }, 60000);
+
+        // 获取赛季统计
+        const stats = await getSeasonStats(season.id);
+        if (stats) {
+          document.getElementById('season-participants').textContent = stats.activeUsers + ' 人';
+        }
+
+        // 获取赛季排行榜和用户排名
+        const leaderboard = await getSeasonLeaderboard(season.id);
+        if (leaderboard && leaderboard.length > 0) {
+          const userRankIndex = leaderboard.findIndex(item => item.id === currentUser.id);
+          if (userRankIndex >= 0) {
+            document.getElementById('season-user-rank').textContent = `#${userRankIndex + 1}`;
+          } else {
+            document.getElementById('season-user-rank').textContent = '未参赛';
+          }
+        }
+
+        // 获取用户在赛季中的积分（需要从赛季排行榜中获取）
+        if (leaderboard && leaderboard.length > 0) {
+          const userSeasonData = leaderboard.find(item => item.id === currentUser.id);
+          if (userSeasonData) {
+            document.getElementById('season-user-points').textContent = userSeasonData.total_points.toLocaleString();
+          } else {
+            document.getElementById('season-user-points').textContent = '0';
+          }
+        }
+
+      } catch (error) {
+        console.error('加载赛季数据失败:', error);
+        // 出错时隐藏横幅
+        document.getElementById('season-banner').classList.add('hidden');
+      }
+    }
+
+    // 加载用户数据
+    async function loadUserData() {
+      try {
+        const stats = await getUserStats();
+        if (stats) {
+          document.querySelector('[data-stat="totalGames"]').textContent = stats.totalGames || 0;
+          document.querySelector('[data-stat="totalPointsEarned"]').textContent = stats.totalPointsEarned || 0;
+          document.querySelector('[data-stat="completedTasks"]').textContent = stats.completedTasks || 0;
+
+          // 显示最佳成绩
+          const bestScoreEl = document.querySelector('[data-stat="bestScore"]');
+          if (stats.bestF1Reaction) {
+            bestScoreEl.textContent = (stats.bestF1Reaction * 1000).toFixed(0) + 'ms';
+          } else if (stats.bestSchulteGrid) {
+            bestScoreEl.textContent = stats.bestSchulteGrid.toFixed(1) + 's';
+          } else {
+            bestScoreEl.textContent = '-';
+          }
+        }
+      } catch (error) {
+        console.error('加载用户数据失败:', error);
+      }
+    }
+
+    // 加载今日任务
+    async function loadTasks() {
+      const container = document.getElementById('tasks-container');
+      try {
+        const tasks = await getTodayTasks();
+        renderTasks(tasks, container);
+      } catch (error) {
+        container.innerHTML = '<p class="text-center" style="color: var(--danger-color);">加载失败</p>';
+      }
+    }
+
+    // 加载排行榜
+    async function loadLeaderboard() {
+      const container = document.getElementById('leaderboard-container');
+      try {
+        const leaderboard = await getLeaderboard('total');
+
+        if (!leaderboard || leaderboard.length === 0) {
+          container.innerHTML = '<p class="text-center" style="color: var(--text-secondary);">暂无数据</p>';
+          return;
+        }
+
+        // 只显示前10名
+        const top10 = leaderboard.slice(0, 10);
+
+        const html = `
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>用户</th>
+                <th>积分</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${top10.map((item, index) => `
+                <tr>
+                  <td class="rank-${index + 1}">#${index + 1}</td>
+                  <td>${item.username}${item.id === currentUser.id ? ' (你)' : ''}</td>
+                  <td>⭐ ${item.points}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+        container.innerHTML = html;
+      } catch (error) {
+        container.innerHTML = '<p class="text-center" style="color: var(--danger-color);">加载失败</p>';
+      }
+    }
+  </script>
+</body>
+</html>

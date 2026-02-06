@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>舒尔特方格 - 专注力训练平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .schulte-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .back-button {
+      margin-bottom: 20px;
+    }
+
+    .game-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    /* 左右分栏布局 */
+    .game-layout {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 30px;
+      align-items: start;
+    }
+
+    /* 左侧：游戏区域 */
+    .game-left-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .difficulty-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .difficulty-btn {
+      padding: 10px 20px;
+      border: 2px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .difficulty-btn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .difficulty-btn.active {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: white;
+    }
+
+    .game-info {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 20px;
+      padding: 20px 30px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      width: 100%;
+      justify-content: center;
+      box-shadow: var(--shadow);
+    }
+
+    .info-item {
+      text-align: center;
+    }
+
+    .info-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .timer {
+      font-size: 56px;
+      font-weight: bold;
+      color: var(--primary-color);
+      font-family: 'Courier New', monospace;
+    }
+
+    .target-number {
+      font-size: 56px;
+      color: var(--secondary-color);
+      font-weight: bold;
+    }
+
+    .grid-wrapper {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .grid-container {
+      display: grid;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .grid-container.grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-container.grid-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .grid-container.grid-5 {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+    .grid-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      background: var(--darker-bg);
+      border: 3px solid var(--border-color);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .grid-cell:hover:not(.disabled) {
+      border-color: var(--primary-color);
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .grid-cell.correct {
+      background: var(--secondary-color);
+      border-color: var(--secondary-color);
+      color: white;
+      animation: pulse 0.3s ease;
+    }
+
+    .grid-cell.wrong {
+      background: var(--danger-color);
+      border-color: var(--danger-color);
+      color: white;
+      animation: shake 0.3s ease;
+    }
+
+    .grid-cell.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .grid-cell.idle {
+      filter: blur(4px);
+      opacity: 0.6;
+      cursor: pointer;
+      transition: all 0.5s ease;
+    }
+
+    .grid-cell.idle:hover {
+      filter: blur(2px);
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+
+    .grid-cell.loading {
+      animation: cellAppear 0.5s ease forwards;
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    @keyframes cellAppear {
+      0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(180deg);
+        filter: blur(10px);
+      }
+      60% {
+        opacity: 0.8;
+        filter: blur(2px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+        filter: blur(4px);
+      }
+    }
+
+    /* 右侧：控制面板和排行榜 */
+    .game-right-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .control-panel {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .control-section {
+      margin-bottom: 24px;
+    }
+
+    .control-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .game-controls {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .game-controls .btn {
+      flex: 1;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .instructions-box {
+      background: var(--darker-bg);
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .instructions-box ul {
+      margin: 8px 0 0 0;
+      padding-left: 20px;
+    }
+
+    .instructions-box li {
+      margin: 6px 0;
+    }
+
+    .result-display {
+      text-align: center;
+      padding: 24px;
+      background: var(--darker-bg);
+      border-radius: 12px;
+      display: none;
+    }
+
+    .result-display.active {
+      display: block;
+    }
+
+    .result-time {
+      font-size: 48px;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .result-message {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .result-points {
+      font-size: 24px;
+      color: var(--warning-color);
+      font-weight: bold;
+    }
+
+    .leaderboard-panel {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-secondary);
+    }
+
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    /* 响应式 */
+    @media (max-width: 1024px) {
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .game-right-section {
+        order: 2;
+      }
+
+      .game-left-section {
+        order: 1;
+      }
+    }
+  </style>
+</head>
+<body data-auth-required="true">
+  <div class="schulte-container">
+    <div class="back-button">
+      <a href="/lobby" class="btn btn-outline">← 返回大厅</a>
+    </div>
+
+    <div class="game-header">
+      <h1>🔢 舒尔特方格</h1>
+      <p style="color: var(--text-secondary);">按顺序点击数字，训练你的注意力！</p>
+    </div>
+
+    <div class="game-layout">
+      <!-- 左侧：游戏区域 -->
+      <div class="game-left-section">
+        <div class="difficulty-selector">
+          <button class="difficulty-btn" data-size="3">3×3 简单</button>
+          <button class="difficulty-btn" data-size="4">4×4 中等</button>
+          <button class="difficulty-btn active" data-size="5">5×5 标准</button>
+        </div>
+
+        <div class="game-info">
+          <div class="info-item">
+            <div class="info-label">目标数字</div>
+            <div class="target-number" id="targetNumber">-</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">用时</div>
+            <div class="timer" id="timer">0.00</div>
+          </div>
+        </div>
+
+        <div class="grid-wrapper">
+          <div class="grid-container grid-5" id="gridContainer"></div>
+        </div>
+      </div>
+
+      <!-- 右侧：控制面板和排行榜 -->
+      <div class="game-right-section">
+        <!-- 控制面板 -->
+        <div class="control-panel">
+          <div class="control-section">
+            <div class="control-title">🎮 游戏控制</div>
+            <div class="game-controls">
+              <button id="startBtn" class="btn btn-primary">开始游戏</button>
+              <button id="resetBtn" class="btn btn-secondary">重新开始</button>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <div class="control-title">📋 游戏说明</div>
+            <div class="instructions-box">
+              <strong>游戏规则：</strong>
+              <ul>
+                <li>从数字 1 开始，按顺序依次点击</li>
+                <li>尽可能快地完成所有数字</li>
+                <li>时间越短，获得的积分越高！</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <div class="control-title">📊 积分规则</div>
+            <div class="instructions-box">
+              <strong id="points-rules-title">5×5 难度：</strong><br>
+              <span style="color: var(--warning-color);">★</span> &lt; 20s: 100分<br>
+              <span style="color: var(--warning-color);">★</span> 20-30s: 80分<br>
+              <span style="color: var(--warning-color);">★</span> 30-40s: 60分<br>
+              <span style="color: var(--warning-color);">★</span> 40-50s: 40分<br>
+              <span style="color: var(--warning-color);">★</span> &gt; 50s: 20分
+            </div>
+          </div>
+
+          <div class="result-display" id="resultDisplay">
+            <div class="result-time" id="resultTime">--</div>
+            <div class="result-message" id="resultMessage"></div>
+            <div class="result-points" id="resultPoints"></div>
+          </div>
+        </div>
+
+        <!-- 排行榜 -->
+        <div class="leaderboard-panel">
+          <div class="control-title">🏆 排行榜 - <span id="leaderboardTitle">5×5 难度</span></div>
+          <div id="leaderboard-container">
+            <div class="loading">加载中</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    // 游戏配置
+    const GRID_SIZE = 5;
+    let currentSize = 5;
+    let gameState = 'idle'; // idle, playing, finished
+    let numbers = [];
+    let currentNumber = 1;
+    let timerInterval = null;
+    let startTime = 0;
+
+    // DOM 元素
+    const gridContainer = document.getElementById('gridContainer');
+    const targetNumber = document.getElementById('targetNumber');
+    const timer = document.getElementById('timer');
+    const resultDisplay = document.getElementById('resultDisplay');
+    const resultTime = document.getElementById('resultTime');
+    const resultMessage = document.getElementById('resultMessage');
+    const resultPoints = document.getElementById('resultPoints');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const leaderboardTitle = document.getElementById('leaderboardTitle');
+    const pointsRulesTitle = document.getElementById('points-rules-title');
+
+    // 难度对应的积分规则
+    const pointsRules = {
+      3: { threshold: [12, 18, 24, 30], name: '3×3 简单' },
+      4: { threshold: [16, 24, 32, 40], name: '4×4 中等' },
+      5: { threshold: [20, 30, 40, 50], name: '5×5 标准' }
+    };
+
+    // 评价等级
+    const evaluations = [
+      { max: 0.8, text: '🏆 超凡入圣！', color: '#ffd700' },
+      { max: 1, text: '🥇 大师级水平！', color: '#c0c0c0' },
+      { max: 1.2, text: '🥈 优秀成绩！', color: '#cd7f32' },
+      { max: 1.5, text: '🥉 良好表现！', color: '#6366f1' },
+      { max: Infinity, text: '💪 继续加油！', color: '#94a3b8' }
+    ];
+
+    // 计算积分
+    function calculatePoints(time) {
+      const [t1, t2, t3, t4] = pointsRules[currentSize].threshold;
+
+      if (time < t1) return 100;
+      if (time < t2) return 80;
+      if (time < t3) return 60;
+      if (time < t4) return 40;
+      return 20;
+    }
+
+    // 获取评价
+    function getEvaluation(time) {
+      const ratio = time / pointsRules[currentSize].threshold[0];
+      return evaluations.find(e => ratio < e.max) || evaluations[evaluations.length - 1];
+    }
+
+    // 生成随机数字数组
+    function generateNumbers(size) {
+      const total = size * size;
+      numbers = Array.from({ length: total }, (_, i) => i + 1);
+
+      // Fisher-Yates 洗牌算法
+      for (let i = numbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+      }
+
+      return numbers;
+    }
+
+    // 创建网格
+    function createGrid() {
+      generateNumbers(currentSize);
+      gridContainer.className = `grid-container grid-${currentSize}`;
+      gridContainer.innerHTML = '';
+
+      const cellSize = currentSize === 3 ? '56px' : currentSize === 4 ? '48px' : '40px';
+
+      numbers.forEach((num, index) => {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell idle';  // 添加 idle 类（模糊效果）
+        cell.textContent = num;
+        cell.dataset.number = num;
+        cell.style.fontSize = cellSize;
+        cell.style.animationDelay = `${index * 50}ms`;  // 阶梯式加载动画
+
+        // 添加加载动画类
+        cell.classList.add('loading');
+
+        // 移除加载动画类，触发动画
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            cell.classList.remove('loading');
+          }, 50 + index * 50);
+        });
+
+        cell.addEventListener('click', () => handleCellClick(cell));
+        gridContainer.appendChild(cell);
+      });
+
+      // 更新积分规则显示
+      updatePointsRules();
+    }
+
+    // 移除模糊效果（游戏开始时调用）
+    function removeBlur() {
+      const cells = gridContainer.querySelectorAll('.grid-cell.idle');
+      cells.forEach((cell, index) => {
+        setTimeout(() => {
+          cell.classList.remove('idle');
+        }, index * 30);
+      });
+    }
+
+    // 更新积分规则显示
+    function updatePointsRules() {
+      const rules = pointsRules[currentSize];
+      pointsRulesTitle.textContent = rules.name + '：';
+
+      const rulesBox = pointsRulesTitle.nextElementSibling;
+      const [t1, t2, t3, t4] = rules.threshold;
+      rulesBox.innerHTML = `
+        <span style="color: var(--warning-color);">★</span> &lt; ${t1}s: 100分<br>
+        <span style="color: var(--warning-color);">★</span> ${t1}-${t2}s: 80分<br>
+        <span style="color: var(--warning-color);">★</span> ${t2}-${t3}s: 60分<br>
+        <span style="color: var(--warning-color);">★</span> ${t3}-${t4}s: 40分<br>
+        <span style="color: var(--warning-color);">★</span> &gt; ${t4}s: 20分
+      `;
+    }
+
+    // 开始游戏
+    function startGame() {
+      if (gameState === 'playing') return;
+
+      gameState = 'playing';
+      currentNumber = 1;
+      startTime = Date.now();
+
+      // 移除模糊效果，开始游戏
+      removeBlur();
+
+      targetNumber.textContent = currentNumber;
+      resultDisplay.classList.remove('active');
+      startBtn.disabled = true;
+      startBtn.textContent = '游戏中...';
+
+      // 启动计时器
+      timerInterval = setInterval(updateTimer, 10);
+    }
+
+    // 更新计时器
+    function updateTimer() {
+      const elapsed = (Date.now() - startTime) / 1000;
+      timer.textContent = elapsed.toFixed(2);
+    }
+
+    // 处理格子点击
+    function handleCellClick(cell) {
+      if (gameState !== 'playing') return;
+
+      const clickedNumber = parseInt(cell.dataset.number);
+
+      if (clickedNumber === currentNumber) {
+        // 正确
+        cell.classList.add('correct', 'disabled');
+        currentNumber++;
+
+        const total = currentSize * currentSize;
+        if (currentNumber > total) {
+          // 游戏完成
+          finishGame();
+        } else {
+          targetNumber.textContent = currentNumber;
+        }
+      } else {
+        // 错误
+        cell.classList.add('wrong');
+        setTimeout(() => {
+          cell.classList.remove('wrong');
+        }, 300);
+      }
+    }
+
+    // 完成游戏
+    async function finishGame() {
+      clearInterval(timerInterval);
+      gameState = 'finished';
+
+      // 获取本地计算的最终时间（不受网络影响）
+      const finalTime = parseFloat(timer.textContent);
+      const points = calculatePoints(finalTime);
+      const evaluation = getEvaluation(finalTime);
+
+      // 立即显示结果
+      resultTime.textContent = finalTime.toFixed(2) + 's';
+      resultTime.style.color = evaluation.color;
+      resultMessage.textContent = evaluation.text;
+      resultMessage.style.color = evaluation.color;
+      resultPoints.textContent = `+${points} 积分`;
+      resultDisplay.classList.add('active');
+      targetNumber.textContent = '完成！';
+      startBtn.disabled = false;
+      startBtn.textContent = '开始游戏';
+
+      // 提交成绩时包含难度信息
+      const gameType = `schulte_grid_${currentSize}`;
+
+      // 异步提交成绩到服务器（不阻塞显示结果）
+      try {
+        const result = await submitScore(gameType, finalTime);
+        const totalPoints = result.totalPoints || points;
+        resultMessage.innerHTML = `${evaluation.text}<br><span style="font-size: 14px;">总计 +${totalPoints} 积分</span>`;
+        // 重新加载排行榜
+        loadLeaderboard();
+      } catch (error) {
+        console.error('提交成绩失败:', error);
+        resultMessage.innerHTML = `${evaluation.text}<br><span style="font-size: 14px; color: var(--danger-color);">成绩上传失败（本地成绩已记录）</span>`;
+      }
+    }
+
+    // 重置游戏
+    function resetGame() {
+      clearInterval(timerInterval);
+      gameState = 'idle';
+      currentNumber = 1;
+      timer.textContent = '0.00';
+      targetNumber.textContent = '-';
+      resultDisplay.classList.remove('active');
+      startBtn.disabled = false;
+      startBtn.textContent = '开始游戏';
+
+      // 重新创建网格（带模糊效果）
+      createGrid();
+    }
+
+    // 切换难度
+    function setDifficulty(size) {
+      if (gameState === 'playing') {
+        if (!confirm('游戏进行中，确定要切换难度吗？')) {
+          return;
+        }
+      }
+
+      currentSize = size;
+      resetGame();
+
+      // 更新按钮状态
+      document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (parseInt(btn.dataset.size) === size) {
+          btn.classList.add('active');
+        }
+      });
+
+      // 更新网格类名
+      gridContainer.className = `grid-container grid-${size}`;
+
+      // 更新积分规则和排行榜标题
+      updatePointsRules();
+      leaderboardTitle.textContent = pointsRules[size].name;
+
+      // 重新加载对应难度的排行榜
+      loadLeaderboard();
+    }
+
+    // 加载排行榜
+    async function loadLeaderboard() {
+      const container = document.getElementById('leaderboard-container');
+
+      try {
+        // 根据当前难度加载对应的排行榜
+        const gameType = `schulte_grid_${currentSize}`;
+        const leaderboard = await getLeaderboard(gameType);
+
+        // 更新标题
+        leaderboardTitle.textContent = pointsRules[currentSize].name;
+
+        if (!leaderboard || leaderboard.length === 0) {
+          container.innerHTML = '<p class="text-center" style="color: var(--text-secondary); padding: 20px;">暂无数据</p>';
+          return;
+        }
+
+        const html = `
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>排名</th>
+                <th>用户</th>
+                <th>用时</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${leaderboard.slice(0, 10).map((item, index) => `
+                <tr>
+                  <td class="rank-${index + 1}">#${index + 1}</td>
+                  <td>${item.username}</td>
+                  <td>${item.score.toFixed(2)}s</td>
+                  <td>${formatDate(item.played_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+        container.innerHTML = html;
+      } catch (error) {
+        container.innerHTML = '<p class="text-center" style="color: var(--danger-color); padding: 20px;">加载失败</p>';
+      }
+    }
+
+    // 事件监听
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
+
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const size = parseInt(btn.dataset.size);
+        setDifficulty(size);
+      });
+    });
+
+    // 键盘支持
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && gameState !== 'playing') {
+        e.preventDefault();
+        startGame();
+      }
+    });
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      createGrid();
+      loadLeaderboard();
+    });
+  </script>
+</body>
+</html>

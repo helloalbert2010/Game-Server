@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 反应测试 - 性能测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .test-area {
+      max-width: 600px;
+      margin: 50px auto;
+      background: #2d2d2d;
+      padding: 30px;
+      border-radius: 12px;
+    }
+
+    .click-target {
+      width: 200px;
+      height: 200px;
+      background: #10b981;
+      border-radius: 12px;
+      margin: 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.1s;
+    }
+
+    .click-target:active {
+      background: #059669;
+      transform: scale(0.95);
+    }
+
+    .instructions {
+      font-size: 14px;
+      color: #888;
+      margin: 20px 0;
+    }
+
+    .result {
+      font-size: 48px;
+      font-weight: bold;
+      color: #10b981;
+      margin: 20px 0;
+    }
+
+    .stats {
+      font-size: 18px;
+      color: #888;
+      margin: 10px 0;
+    }
+
+    button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ 反应时间性能测试</h1>
+
+  <div class="test-area">
+    <p>测试纯粹的点击反应时间（无等待）</p>
+    <div class="click-target" id="clickTarget">点击这里</div>
+    <div class="result" id="result"></div>
+    <div class="stats" id="stats"></div>
+    <button onclick="startTest()">开始测试</button>
+  </div>
+
+  <script>
+    let testStartTime = 0;
+    let isWaiting = false;
+    let attempts = 0;
+    let totalTime = 0;
+
+    function startTest() {
+      isWaiting = true;
+      document.getElementById('clickTarget').textContent = '等待...';
+      document.getElementById('clickTarget').style.background = '#f59e0b';
+
+      // 随机1-3秒后显示点击目标
+      const delay = 1000 + Math.random() * 2000;
+
+      setTimeout(() => {
+        testStartTime = performance.now();
+        isWaiting = false;
+        document.getElementById('clickTarget').textContent = '点击！！！';
+        document.getElementById('clickTarget').style.background = '#10b981';
+      }, delay);
+    }
+
+    document.getElementById('clickTarget').addEventListener('click', () => {
+      if (!isWaiting && testStartTime > 0) {
+        const reactionTime = performance.now() - testStartTime;
+
+        attempts++;
+        totalTime += reactionTime;
+
+        document.getElementById('result').textContent = (reactionTime).toFixed(2) + ' ms';
+        document.getElementById('stats').textContent =
+          `测试次数: ${attempts} | 平均: ${(totalTime / attempts).toFixed(2)} ms`;
+
+        testStartTime = 0;
+        isWaiting = false;
+        document.getElementById('clickTarget').textContent = '点击开始测试';
+        document.getElementById('clickTarget').style.background = '#10b981';
+      }
+    });
+  </script>
+</body>
+</html>

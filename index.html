@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 反应力测试</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏎️ F1 反应力测试</h1>
+            <p class="subtitle">测试你的起步反应速度，对比F1车手！</p>
+        </header>
+
+        <div class="player-info">
+            <label>当前玩家：</label>
+            <input type="text" id="playerName" placeholder="输入你的名字" maxlength="20">
+            <button id="switchPlayerBtn">切换玩家</button>
+        </div>
+
+        <div class="game-area">
+            <div class="lights-container">
+                <div class="light" id="light1"></div>
+                <div class="light" id="light2"></div>
+                <div class="light" id="light3"></div>
+                <div class="light" id="light4"></div>
+                <div class="light" id="light5"></div>
+            </div>
+
+            <div class="result-display" id="resultDisplay">
+                <div class="result-time" id="resultTime">--</div>
+                <div class="result-rank" id="resultRank"></div>
+                <div class="result-f1" id="resultF1"></div>
+            </div>
+
+            <div class="status-message" id="statusMessage">按空格键或点击"开始测试"按钮开始</div>
+
+            <div class="controls">
+                <button id="startBtn" class="btn primary">开始测试</button>
+                <button id="resetBtn" class="btn secondary">重置</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="leaderboard">排行榜</button>
+            <button class="tab-btn" data-tab="stats">统计数据</button>
+            <button class="tab-btn" data-tab="achievements">成就</button>
+        </div>
+
+        <div class="tab-content">
+            <div id="leaderboard" class="tab-panel active">
+                <h2>🏆 排行榜 (Top 10)</h2>
+                <div id="leaderboardList"></div>
+            </div>
+
+            <div id="stats" class="tab-panel">
+                <h2>📊 统计数据</h2>
+                <div class="stats-summary">
+                    <div class="stat-item">
+                        <div class="stat-label">测试次数</div>
+                        <div class="stat-value" id="totalTests">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">最佳成绩</div>
+                        <div class="stat-value" id="bestTime">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">平均成绩</div>
+                        <div class="stat-value" id="avgTime">--</div>
+                    </div>
+                </div>
+                <h3>最近10次成绩趋势</h3>
+                <canvas id="trendChart" width="600" height="300"></canvas>
+                <h3>最近50次记录</h3>
+                <div id="historyList" class="history-list"></div>
+            </div>
+
+            <div id="achievements" class="tab-panel">
+                <h2>🎖️ 成就系统</h2>
+                <div id="achievementsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="sounds.js"></script>
+    <script src="data.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
