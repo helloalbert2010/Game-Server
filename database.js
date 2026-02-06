@@ -318,7 +318,8 @@ const taskOperations = {
 
   // 获取今日任务
   getTodayTasks: async () => {
-    const result = await query('SELECT * FROM daily_tasks WHERE task_date = CURRENT_DATE');
+    const today = new Date().toISOString().split('T')[0];
+    const result = await query('SELECT * FROM daily_tasks WHERE task_date = $1', [today]);
     return result.rows;
   },
 
@@ -379,16 +380,17 @@ const taskOperations = {
       comparison = `${score} >= target_score`;
     }
 
+    const today = new Date().toISOString().split('T')[0];
     const result = await query(`
       SELECT * FROM daily_tasks
-      WHERE task_date = CURRENT_DATE
-      AND game_type = $1
+      WHERE task_date = $1
+      AND game_type = $2
       AND ${comparison}
       AND id NOT IN (
         SELECT task_id FROM user_tasks
-        WHERE user_id = $2 AND completed = 1
+        WHERE user_id = $3 AND completed = 1
       )
-    `, [gameType, userId]);
+    `, [today, gameType, userId]);
 
     return result.rows;
   },
@@ -396,7 +398,8 @@ const taskOperations = {
   // 生成每日任务
   generateDailyTasks: async () => {
     // 检查今日任务是否已生成
-    const result = await query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = CURRENT_DATE');
+    const today = new Date().toISOString().split('T')[0];
+    const result = await query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = $1', [today]);
 
     if (result.rows[0].count > 0) {
       return { exists: true };

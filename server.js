@@ -253,8 +253,9 @@ app.get('/api/check-status', async (req, res) => {
     console.log('[STATUS] Admin 用户查询结果:', userResult.rows);
     const adminExists = userResult.rows.length > 0;
 
-    // 检查今日任务
-    const taskResult = await pool.query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = CURRENT_DATE');
+    // 检查今日任务（转换为文本格式比较）
+    const today = new Date().toISOString().split('T')[0];
+    const taskResult = await pool.query('SELECT COUNT(*) as count FROM daily_tasks WHERE task_date = $1', [today]);
     console.log('[STATUS] 今日任务查询结果:', taskResult.rows);
     const todayTaskCount = parseInt(taskResult.rows[0].count);
 
