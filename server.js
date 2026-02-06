@@ -89,17 +89,27 @@ app.post('/api/register', validateBody(['username', 'password']), async (req, re
 app.post('/api/login', validateBody(['username', 'password']), async (req, res) => {
   const { username, password } = req.body;
 
+  console.log('[LOGIN] 尝试登录:', { username, passwordLength: password?.length });
+
   const user = await userOperations.findByUsername(username);
   if (!user) {
+    console.log('[LOGIN] 用户不存在:', username);
     return res.status(401).json({ error: '用户名或密码错误' });
   }
 
-  if (!verifyPassword(password, user.password)) {
+  console.log('[LOGIN] 找到用户:', { id: user.id, username: user.username, isAdmin: user.isAdmin });
+
+  const passwordMatch = verifyPassword(password, user.password);
+  console.log('[LOGIN] 密码验证结果:', passwordMatch);
+
+  if (!passwordMatch) {
+    console.log('[LOGIN] 密码错误');
     return res.status(401).json({ error: '用户名或密码错误' });
   }
 
   // 生成 JWT token
   const token = generateToken(user);
+  console.log('[LOGIN] Token 已生成');
 
   // 设置 cookie
   res.cookie('token', token, {
@@ -112,6 +122,7 @@ app.post('/api/login', validateBody(['username', 'password']), async (req, res) 
   // 更新最后登录时间
   await userOperations.updateLastLogin(user.id);
 
+  console.log('[LOGIN] 登录成功:', user.username);
   res.json({
     message: '登录成功',
     user: {
@@ -505,6 +516,11 @@ app.get('/games/breakout', (req, res) => {
 });
 
 // ==================== 错误处理 ====================
+
+// Favicon 处理（避免 404 错误）
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
 
 app.use(errorHandler);
 

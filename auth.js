@@ -35,15 +35,20 @@ function verifyPassword(password, hashedPassword) {
 function authenticate(req, res, next) {
   const token = req.cookies?.token;
 
+  console.log('[AUTH] 认证检查:', { hasToken: !!token, path: req.path });
+
   if (!token) {
+    console.log('[AUTH] 无 token');
     return res.status(401).json({ error: '未登录，请先登录' });
   }
 
   const decoded = verifyToken(token);
   if (!decoded) {
+    console.log('[AUTH] Token 验证失败');
     return res.status(401).json({ error: '登录已过期，请重新登录' });
   }
 
+  console.log('[AUTH] Token 验证成功:', { userId: decoded.userId, username: decoded.username });
   req.user = decoded;
   req.userId = decoded.userId;
   req.isAdmin = decoded.isAdmin;
