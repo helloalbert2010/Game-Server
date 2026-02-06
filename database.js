@@ -643,15 +643,13 @@ if (!isVercel) {
   });
 } else {
   // Vercel 环境：延迟初始化，确保已连接数据库
-  pool.connect((err, client, release) => {
-    if (err) {
-      console.error('数据库连接失败:', err);
-      return;
-    }
-    console.log('已连接到 PostgreSQL 数据库 (Vercel)');
-    release();
-    initializeDatabase().catch(err => {
-      console.error('数据库初始化失败:', err);
+  pool.connect()
+    .then(client => {
+      console.log('已连接到 PostgreSQL 数据库 (Vercel/Production)');
+      client.release();
+      return initializeDatabase();
+    })
+    .catch(err => {
+      console.error('数据库连接或初始化失败:', err);
     });
-  });
 }

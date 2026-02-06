@@ -229,19 +229,14 @@ app.get('/api/tasks/today', authenticate, async (req, res) => {
 
   // 检查用户完成任务情况
   const userId = req.userId;
-  const { db } = require('./database');
+  const { query } = require('./database');
 
   const tasksWithStatus = await Promise.all(tasks.map(async (task) => {
-    const checkStmt = await new Promise((resolve, reject) => {
-      db.get(
-        'SELECT completed FROM user_tasks WHERE user_id = ? AND task_id = ?',
-        [userId, task.id],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const result = await query(
+      'SELECT completed FROM user_tasks WHERE user_id = $1 AND task_id = $2',
+      [userId, task.id]
+    );
+    const checkStmt = result.rows[0];
     return {
       ...task,
       completed: checkStmt ? checkStmt.completed === 1 : false
