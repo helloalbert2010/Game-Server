@@ -7,7 +7,8 @@ const {
   scoreOperations,
   taskOperations,
   statsOperations,
-  seasonOperations
+  seasonOperations,
+  ensureAdminUser
 } = require('./database');
 const {
   verifyPassword,
@@ -138,6 +139,19 @@ app.post('/api/login', validateBody(['username', 'password']), async (req, res) 
 app.post('/api/logout', (req, res) => {
   res.clearCookie('token');
   res.json({ message: '登出成功' });
+});
+
+// 初始化检查（确保 admin 用户存在）
+app.get('/api/init-check', async (req, res) => {
+  try {
+    console.log('[INIT] 开始检查 admin 用户...');
+    await ensureAdminUser();
+    console.log('[INIT] Admin 用户检查完成');
+    res.json({ message: 'Admin user check completed', adminExists: true });
+  } catch (err) {
+    console.error('[INIT] Admin 用户创建失败:', err);
+    res.status(500).json({ error: 'Failed to ensure admin user', details: err.message });
+  }
 });
 
 // 获取当前用户信息

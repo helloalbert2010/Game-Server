@@ -640,11 +640,13 @@ async function ensureAdminUser() {
 // 导出操作
 module.exports = {
   pool,
+  query,
   userOperations,
   scoreOperations,
   taskOperations,
   statsOperations,
-  seasonOperations
+  seasonOperations,
+  ensureAdminUser
 };
 
 // 初始化数据库（仅在非 Vercel 环境或首次连接时）
