@@ -273,15 +273,16 @@ const scoreOperations = {
 
   // 获取今日排行榜
   getTodayLeaderboard: async (limit = 20) => {
+    const today = new Date().toISOString().split('T')[0];
     const result = await query(`
       SELECT u.username, SUM(s.points_earned) as total_points
       FROM game_scores s
       JOIN users u ON s.user_id = u.id
-      WHERE DATE(s.played_at) = CURRENT_DATE
+      WHERE DATE(s.played_at) = $1
       GROUP BY u.id, u.username
       ORDER BY total_points DESC
-      LIMIT $1
-    `, [limit]);
+      LIMIT $2
+    `, [today, limit]);
 
     return result.rows;
   },
@@ -372,25 +373,35 @@ const taskOperations = {
   // 检查任务完成条件
   checkTaskCompletion: async (userId, gameType, score) => {
     const timeBasedGames = ['f1_reaction', 'schulte_grid', 'schulte_grid_3', 'schulte_grid_4', 'schulte_grid_5'];
-    let comparison;
-
-    if (timeBasedGames.includes(gameType)) {
-      comparison = `target_score >= ${score}`;
-    } else {
-      comparison = `${score} >= target_score`;
-    }
 
     const today = new Date().toISOString().split('T')[0];
-    const result = await query(`
-      SELECT * FROM daily_tasks
-      WHERE task_date = $1
-      AND game_type = $2
-      AND ${comparison}
-      AND id NOT IN (
-        SELECT task_id FROM user_tasks
-        WHERE user_id = $3 AND completed = 1
-      )
-    `, [today, gameType, userId]);
+
+    let result;
+    if (timeBasedGames.includes(gameType)) {
+      // 时间类游戏：分数越低越好（反应时间）
+      result = await query(`
+        SELECT * FROM daily_tasks
+        WHERE task_date = $1
+        AND game_type = $2
+        AND target_score >= $3
+        AND id NOT IN (
+          SELECT task_id FROM user_tasks
+          WHERE user_id = $4 AND completed = 1
+        )
+      `, [today, gameType, score, userId]);
+    } else {
+      // 分数类游戏：分数越高越好
+      result = await query(`
+        SELECT * FROM daily_tasks
+        WHERE task_date = $1
+        AND game_type = $2
+        AND $3 >= target_score
+        AND id NOT IN (
+          SELECT task_id FROM user_tasks
+          WHERE user_id = $4 AND completed = 1
+        )
+      `, [today, gameType, score, userId]);
+    }
 
     return result.rows;
   },
@@ -457,11 +468,13 @@ const statsOperations = {
     const userCount = await query('SELECT COUNT(*) as count FROM users');
     const scoreCount = await query('SELECT COUNT(*) as count FROM game_scores');
     const totalPoints = await query('SELECT SUM(points) as total FROM users');
+
+    const today = new Date().toISOString().split('T')[0];
     const todayActive = await query(`
       SELECT COUNT(DISTINCT user_id) as count
       FROM game_scores
-      WHERE DATE(played_at) = CURRENT_DATE
-    `);
+      WHERE DATE(played_at) = $1
+    `, [today]);
 
     return {
       totalUsers: userCount.rows[0].count,
